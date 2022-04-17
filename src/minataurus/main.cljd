@@ -1,0 +1,40 @@
+(ns minataurus.main
+  (:require
+   ["package:flutter/material.dart" :as material]
+   ["package:flutter/painting.dart" :as painting]
+   ["package:flutter/widgets.dart" :as widgets]
+   ["package:fluro/fluro.dart" :as fluro]))
+
+(def router (fluro/FluroRouter.))
+
+(defn scaffold []
+  (material/Scaffold.
+    :appBar 
+    (material/AppBar.
+      :title (widgets/Text. "Welcome to ClojureDart"))
+    :body 
+    (widgets/Center.
+      :child 
+      (widgets/Text. 
+        "This text is Centered."
+        :style 
+        (painting/TextStyle.
+          :color material.Colors/red
+          :fontSize 32.0)))))
+
+(def root-handler 
+  (fluro/Handler.
+    :type fluro.HandlerType/route
+    :handlerFunc 
+    (fn [contex params] (scaffold))))
+
+;; here analyzer cant read :handler named parameter
+(defn register []
+  (.define router "/" :handler root-handler))
+
+(defn main []
+  (material/runApp
+    (material/MaterialApp.
+      :title "Welcome to Flutter"
+      :theme (material/ThemeData. :primarySwatch material.Colors/pink)
+      :home (scaffold))))
