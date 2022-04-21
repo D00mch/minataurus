@@ -3,102 +3,39 @@
    ["package:flutter/material.dart" :as m]
    ["package:flutter/painting.dart" :as painting]
    ["package:flutter/widgets.dart" :as widgets]
-   ["package:flutter/src/widgets/framework.dart" :as framework]
    ["package:feather_icons/feather_icons.dart" :as icons]
-   [minataurus.utils :as utils]
-   [minataurus.fab :as fab]
+   [minataurus.fab :as fab]))
 
-   ; ["package:bloc/bloc.dart" :as bloc]
-
-   ; [cljd.core :as core]
-   [cljd.flutter.alpha :as f]
-   ))
-
-(def ^:private logger (utils/build-logger "main"))
-; (def ^:private state (atom {:a 1}))
-
-(defn main-page ^framework/Widget [_]
-  (m/Scaffold.
-    :appBar (m/AppBar.
-              :title (widgets/Text. "clojure dart"))
-    :body (widgets/Column
-            :crossAxisAlignment widgets.CrossAxisAlignment/start
-            :children 
-            [(widgets/Text. 
-               "This text is Centered (*)"
-               :style (painting/TextStyle.
-                        :color m.Colors/red
-                        :fontSize 32.0))
-             (.icon m/TextButton 
-               :label (widgets/Text "Button")
-               :onPressed (fn [] 
-                            (.d logger "bob"))
-               :icon (widgets/Icon icons.FeatherIcons/command))])))
-
-(defn accounts-page ^m/Widget [_]
-  (let [^#/(m/ValueNotifier bool) opened? (m/ValueNotifier false)
+(defn ^m/Widget accounts-page [_]
+  (let [^#/(m/ValueNotifier bool) close-hint (m/ValueNotifier false)
         button-style (m.TextButton/styleFrom
-                       :backgroundColor m.Colors/white
+                       :backgroundColor m.Colors/blue
                        :elevation 4
-                       :padding (m.EdgeInsets/symmetric :horizontal 16))]
+                       :padding (m.EdgeInsets/symmetric :horizontal 16))
+        text-style (painting/TextStyle. :color m.Colors/white)]
    (m/Scaffold.
-    :floatingActionButton (fab/ExpandableFab.
-                            opened? ; close hint
-                            80.0    ; distance
-                            ;; children
-                            [(.icon m/TextButton 
-                                    :onPressed (fn [] (.d logger "onPressed create"))
-                                    :style button-style
-                                    :icon (m/Icon. icons.FeatherIcons/plus :size 24)
-                                    :label (m/Text. "Create"))
-                             (.icon m/TextButton 
-                                    :onPressed (fn [] (.d logger  "onPressed create"))
-                                    :style button-style
-                                    :icon (m/Icon. icons.FeatherIcons/gitMerge :size 24)
-                                    :label (m/Text. "Update"))])
-    :body (widgets/Text. 
-               "This text is Centered (*)"
+     :backgroundColor m.Colors/black
+     :floatingActionButton 
+     (fab/ExpandableFab.
+       close-hint
+       80.0                  ; distance
+       [(.icon m/TextButton  ; children
+               :onPressed (fn [] (set! (.-value close-hint) false) nil)
+               :style button-style
+               :icon (m/Icon. icons.FeatherIcons/plus :size 24 :color m.Colors/yellow)
+               :label (m/Text. "Create" :style text-style))
+        (.icon m/TextButton 
+               :onPressed (fn ^void [] (set! (.-value close-hint) false) nil)
+               :style button-style
+               :icon (m/Icon. icons.FeatherIcons/gitMerge :size 24 :color m.Colors/yellow)
+               :label (m/Text. "Update" :style text-style))])
+    :body (m/Padding.
+            :padding (.all m/EdgeInsets 16)
+            :child (widgets/Text. 
+               "The text is not Centered"
                :style (painting/TextStyle.
-                        :color m.Colors/red
-                        :fontSize 32.0)))))
-
-(def tabs
-  [{:label "Accounts"
-    :icon icons.FeatherIcons/home
-    :screen #(accounts-page %)}
-   {:label "Wallet",
-    :icon icons.FeatherIcons/pocket
-    :screen #(main-page %)}
-   {:label "Stacking"
-    :icon icons.FeatherIcons/percent 
-    :screen #(main-page %)}
-   {:label "Settings"
-    :icon icons.FeatherIcons/settings
-    :screen #(main-page %)}])
-
-(defn ^framework/Widget main-screen [ctx]
-  (f/widget
-  :state [idx 0]
-  (m/Scaffold.
-    :body (widgets/SafeArea
-           :child (widgets/IndexedStack
-                    :index @idx
-                    :children (map 
-                                #((:screen %) nil)
-                                tabs)))
-    :bottomNavigationBar (m/BottomNavigationBar.
-                           :type m.BottomNavigationBarType/fixed
-                           :selectedItemColor m.Colors/deepPurple
-                           :unselectedItemColor m.Colors/blue
-                           :showSelectedLabels true
-                           :showUnselectedLabels true
-                           :currentIndex @idx
-                           :onTap #(reset! idx %)
-                           :items (map 
-                                    #(m/BottomNavigationBarItem.
-                                       :icon (widgets/Icon. (:icon %))
-                                       :label (:label %))
-                                    tabs)))))
+                        :color m.Colors/white
+                        :fontSize 32.0))))))
 
 (defn main []
   (m/runApp
@@ -106,4 +43,4 @@
       :title "Welcome to Flutter"
       :theme (m/ThemeData. :primarySwatch m.Colors/pink)
       :initialRoute "/" 
-      :routes {"/" main-screen})))
+      :routes {"/" accounts-page})))

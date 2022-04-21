@@ -1,7 +1,7 @@
 (ns minataurus.utils
   (:require ["package:logger/logger.dart" :as logger]))
 
-(defn build-logger [tag]
+(defn ^logger/Logger build-logger [tag]
   (logger/Logger.
     :printer (logger/PrefixPrinter.
                (logger/SimplePrinter.)
