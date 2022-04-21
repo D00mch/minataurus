@@ -1,20 +1,30 @@
 (ns minataurus.fab
   (:require
-   ["package:flutter/material.dart" :as m]))
+    ["package:flutter/material.dart" :as m]
+    ["dart:math" :refer [pi]]
+    [cljd.flutter.alpha :as f]))
 
-;; can't compile dart:math/pi 
-(def ^{:const true, :private true} pi 3.1415926535897932)
-
-(defn- toggle [opened? 
-               ^m/State state
-               ^m/AnimationController controller]
-  (.setState 
-    state
-    #(do (let [op? @opened?]
-           (if op?
-             (.forward controller)
-             (.reverse controller))
-           (swap! opened? not)))))
+(defn- ^m/StatelessWidget build-expandable-button 
+  [^double max-distance
+   ^double direction-degrees
+   ^#/(m/Animation double) progress
+   ^m/Widget child]
+  (f/widget
+    (m/AnimatedBuilder.
+      :animation progress
+      :builder (fn [_ child]
+                 (let [offset (.fromDirection 
+                                m/Offset
+                                (* direction-degrees (/ pi 180.0))
+                                (* (.value progress) max-distance))]
+                   (m/Positioned
+                     :right (+ 4.0 (.dx offset))
+                     :bottom (+ 4.0 (.dy offset))
+                     :child (.rotate 
+                              m/Transform
+                              :angle (* (/ pi 2.0) (- 1.0 (.value progress)))
+                              :child child))))
+      :child (m/FadeTransition. :opacity progress :child child))))
 
 (defn- widgets->expanding-action-buttons 
   [^#/(List m/Widget) children 
@@ -28,7 +38,7 @@
         (recur (+ angle-in-degrees step)
                (next children)
                (conj result 
-                     (ExpandingActionButton.
+                     (build-expandable-button
                        distance
                        angle-in-degrees
                        expand-animation
@@ -58,27 +68,18 @@
                                                       (.primaryColor theme)
                                                       m.Colors/red)))))))
 
-(deftype ExpandableFab 
-  [^#/(m/ValueNotifier bool) close-hint
-   ^double distance
-   ^#/(List m/Widget) children]
-
-  :extends m/StatefulWidget
-
-  (^ExpandableFabState createState [_]
-    (ExpandableFabState.
-        (atom nil)   ; animation-controller
-        (atom nil)   ; animation 
-        (atom false) ; opened?
-        (atom nil)   ; listener
-        distance
-        close-hint
-        children)))
+(defn- toggle [opened? 
+               ^m/State state
+               ^m/AnimationController controller]
+  (.setState state #(do 
+                      (swap! opened? not)
+                      (if @opened?
+                        (.forward controller)
+                        (.reverse controller))
+                      nil)))
 
 (deftype ExpandableFabState 
-  [;^m/AnimationController? _controller
-   controller
-   ;;^#/(m/Animation double) expand-animation
+  [controller
    animation
    opened?
    listener
@@ -103,7 +104,7 @@
       (reset! listener _listener)
       (.addListener close-hint _listener)))
 
-  (^void dispose [this]
+  (^void dispose [_]
     (when-let [^m/AnimationController? _controller @controller]
       (.dispose _controller))
     (.removeListener close-hint @listener))
@@ -119,29 +120,19 @@
                                   @animation
                                   distance))))))
 
-(deftype ExpandingActionButton 
-   [^double max-distance
-    ^double direction-degrees
-    ^#/(m/Animation double) progress
-    ^m/Widget child] 
+(deftype ExpandableFab 
+  [^#/(m/ValueNotifier bool) close-hint
+   ^double distance
+   ^#/(List m/Widget) children]
 
-  :extends m/StatelessWidget
+  :extends m/StatefulWidget
 
-  (^m/Widget build [_ _]
-    (m/AnimatedBuilder.
-      :animation progress
-      :builder (fn [_ child]
-                 (let [offset (.fromDirection 
-                                m/Offset
-                                (* direction-degrees (/ pi 180.0))
-                                (* (.value progress) max-distance))]
-                   (m/Positioned
-                     :right (+ 4.0 (.dx offset))
-                     :bottom (+ 4.0 (.dy offset))
-                     :child (.rotate 
-                              m/Transform
-                              :angle (* (/ pi 2.0) (- 1.0 (.value progress)))
-                              :child child))))
-      :child (m/FadeTransition. 
-               :opacity progress
-               :child child))))
+  (^ExpandableFabState createState [_]
+    (ExpandableFabState.
+        (atom nil)   ; animation-controller
+        (atom nil)   ; animation 
+        (atom false) ; opened?
+        (atom nil)   ; listener
+        distance
+        close-hint
+        children)))

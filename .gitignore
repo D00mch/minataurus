@@ -21,7 +21,7 @@
 .idea/
 
 # Cljdart generated
-.clojuredart/
+.clojuredart/*
 lib/cljd-out/
 .cpcache/
 

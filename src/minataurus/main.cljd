@@ -1,41 +1,59 @@
 (ns minataurus.main
   (:require
    ["package:flutter/material.dart" :as m]
-   ["package:flutter/painting.dart" :as painting]
-   ["package:flutter/widgets.dart" :as widgets]
    ["package:feather_icons/feather_icons.dart" :as icons]
-   [minataurus.fab :as fab]))
+   [minataurus.fab :as fab]
+   [minataurus.utils :as utils]))
+
+(def ^:private logger (utils/build-logger "main"))
 
 (defn ^m/Widget accounts-page [_]
+  (.d logger "created")
   (let [^#/(m/ValueNotifier bool) close-hint (m/ValueNotifier false)
         button-style (m.TextButton/styleFrom
                        :backgroundColor m.Colors/blue
                        :elevation 4
                        :padding (m.EdgeInsets/symmetric :horizontal 16))
-        text-style (painting/TextStyle. :color m.Colors/white)]
-   (m/Scaffold.
-     :backgroundColor m.Colors/black
-     :floatingActionButton 
-     (fab/ExpandableFab.
-       close-hint
-       80.0                  ; distance
-       [(.icon m/TextButton  ; children
-               :onPressed (fn [] (set! (.-value close-hint) false) nil)
-               :style button-style
-               :icon (m/Icon. icons.FeatherIcons/plus :size 24 :color m.Colors/yellow)
-               :label (m/Text. "Create" :style text-style))
-        (.icon m/TextButton 
-               :onPressed (fn ^void [] (set! (.-value close-hint) false) nil)
-               :style button-style
-               :icon (m/Icon. icons.FeatherIcons/gitMerge :size 24 :color m.Colors/yellow)
-               :label (m/Text. "Update" :style text-style))])
-    :body (m/Padding.
-            :padding (.all m/EdgeInsets 16)
-            :child (widgets/Text. 
-               "The text is not Centered"
-               :style (painting/TextStyle.
-                        :color m.Colors/white
-                        :fontSize 32.0))))))
+        text-style (m/TextStyle. :color m.Colors/white)]
+    (m/Scaffold.
+      :backgroundColor m.Colors/black
+      :floatingActionButton 
+      (fab/ExpandableFab.
+        close-hint
+        80.0                  ; distance
+        [(.icon m/TextButton  ; children
+                :onPressed (fn [] (set! (.-value close-hint) false) nil)
+                :style button-style
+                :icon (m/Icon. icons.FeatherIcons/plus :size 24 :color m.Colors/yellow)
+                :label (m/Text. "Create" :style text-style))
+         (.icon m/TextButton 
+                :onPressed (fn ^void [] (set! (.-value close-hint) false) nil)
+                :style button-style
+                :icon (m/Icon. icons.FeatherIcons/gitMerge :size 24 :color m.Colors/yellow)
+                :label (m/Text. "Update" :style text-style))])
+      :body (m/Padding.
+              :padding (.all m/EdgeInsets 16)
+              :child 
+              (m/Column
+                :crossAxisAlignment m.CrossAxisAlignment/start
+                :children [(m/SizedBox. :height 32)
+                           (m/Text. 
+                             "Trying ClojureDart \n the first time"
+                             :style (m/TextStyle.
+                                      :color m.Colors/white
+                                      :fontSize 32.0))
+                           (m/SizedBox. :height 32)
+                           (m/Text. 
+                             (str 
+                               "This demo is written with ClojureDart.\n\n"
+                               "You may see the examples in the linked source code:\n"
+                               "custom Stateful and Stateless widgets, "
+                               "Mixins, Animations.\n\n"
+                               
+                               "Home this will help someone.")
+                             :style (m/TextStyle.
+                                      :color m.Colors/white
+                                      :fontSize 26.0))])))))
 
 (defn main []
   (m/runApp
