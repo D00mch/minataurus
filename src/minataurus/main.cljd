@@ -1,39 +1,109 @@
 (ns minataurus.main
   (:require
-   ["package:flutter/material.dart" :as material]
+   ["package:flutter/material.dart" :as m]
    ["package:flutter/painting.dart" :as painting]
    ["package:flutter/widgets.dart" :as widgets]
    ["package:flutter/src/widgets/framework.dart" :as framework]
-   ["package:fluro/fluro.dart" :as fluro]
+   ["package:feather_icons/feather_icons.dart" :as icons]
+   [minataurus.utils :as utils]
+   [minataurus.fab :as fab]
+
+   ; ["package:bloc/bloc.dart" :as bloc]
+
+   ; [cljd.core :as core]
+   [cljd.flutter.alpha :as f]
    ))
 
-(def router (fluro/FluroRouter.))
+(def ^:private logger (utils/build-logger "main"))
+; (def ^:private state (atom {:a 1}))
 
-(.define router "/" :handler nil)
-
-
-(defn ^framework/Widget main-page [ctx]
-  (material/Scaffold.
-    :appBar (material/AppBar.
+(defn main-page ^framework/Widget [_]
+  (m/Scaffold.
+    :appBar (m/AppBar.
               :title (widgets/Text. "clojure dart"))
-    :body (widgets/Center.
-            :child 
-            (widgets/Text. 
-              "This text is Centered!"
-              :style (painting/TextStyle.
-                       :color material.Colors/red
-                       :fontSize 32.0)))))
+    :body (widgets/Column
+            :crossAxisAlignment widgets.CrossAxisAlignment/start
+            :children 
+            [(widgets/Text. 
+               "This text is Centered (*)"
+               :style (painting/TextStyle.
+                        :color m.Colors/red
+                        :fontSize 32.0))
+             (.icon m/TextButton 
+               :label (widgets/Text "Button")
+               :onPressed (fn [] 
+                            (.d logger "bob"))
+               :icon (widgets/Icon icons.FeatherIcons/command))])))
 
-(def root-handler 
-  (fluro/Handler.
-    :type fluro.HandlerType/route
-    :handlerFunc 
-    (fn [contex params] (main-page))))
+(defn accounts-page ^m/Widget [_]
+  (let [^#/(m/ValueNotifier bool) opened? (m/ValueNotifier false)
+        button-style (m.TextButton/styleFrom
+                       :backgroundColor m.Colors/white
+                       :elevation 4
+                       :padding (m.EdgeInsets/symmetric :horizontal 16))]
+   (m/Scaffold.
+    :floatingActionButton (fab/ExpandableFab.
+                            opened? ; close hint
+                            80.0    ; distance
+                            ;; children
+                            [(.icon m/TextButton 
+                                    :onPressed (fn [] (.d logger "onPressed create"))
+                                    :style button-style
+                                    :icon (m/Icon. icons.FeatherIcons/plus :size 24)
+                                    :label (m/Text. "Create"))
+                             (.icon m/TextButton 
+                                    :onPressed (fn [] (.d logger  "onPressed create"))
+                                    :style button-style
+                                    :icon (m/Icon. icons.FeatherIcons/gitMerge :size 24)
+                                    :label (m/Text. "Update"))])
+    :body (widgets/Text. 
+               "This text is Centered (*)"
+               :style (painting/TextStyle.
+                        :color m.Colors/red
+                        :fontSize 32.0)))))
+
+(def tabs
+  [{:label "Accounts"
+    :icon icons.FeatherIcons/home
+    :screen #(accounts-page %)}
+   {:label "Wallet",
+    :icon icons.FeatherIcons/pocket
+    :screen #(main-page %)}
+   {:label "Stacking"
+    :icon icons.FeatherIcons/percent 
+    :screen #(main-page %)}
+   {:label "Settings"
+    :icon icons.FeatherIcons/settings
+    :screen #(main-page %)}])
+
+(defn ^framework/Widget main-screen [ctx]
+  (f/widget
+  :state [idx 0]
+  (m/Scaffold.
+    :body (widgets/SafeArea
+           :child (widgets/IndexedStack
+                    :index @idx
+                    :children (map 
+                                #((:screen %) nil)
+                                tabs)))
+    :bottomNavigationBar (m/BottomNavigationBar.
+                           :type m.BottomNavigationBarType/fixed
+                           :selectedItemColor m.Colors/deepPurple
+                           :unselectedItemColor m.Colors/blue
+                           :showSelectedLabels true
+                           :showUnselectedLabels true
+                           :currentIndex @idx
+                           :onTap #(reset! idx %)
+                           :items (map 
+                                    #(m/BottomNavigationBarItem.
+                                       :icon (widgets/Icon. (:icon %))
+                                       :label (:label %))
+                                    tabs)))))
 
 (defn main []
-  (material/runApp
-    (material/MaterialApp.
+  (m/runApp
+    (m/MaterialApp.
       :title "Welcome to Flutter"
-      :theme (material/ThemeData. :primarySwatch material.Colors/pink)
+      :theme (m/ThemeData. :primarySwatch m.Colors/pink)
       :initialRoute "/" 
-      :routes {"/" main-page})))
+      :routes {"/" main-screen})))

@@ -13,9 +13,18 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.2
+  feather_icons: ^1.2.0
 
   # routing
   fluro: ^2.0.3
+
+  # ui state management
+  bloc: ^8.0.0
+  flutter_bloc: 8.0.0
+
+  # utility
+  logger: ^1.1.0
+  flutter_windowmanager: ^0.2.0
 
 dev_dependencies:
   flutter_test:

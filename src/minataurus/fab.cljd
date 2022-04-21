@@ -1,0 +1,149 @@
+(ns minataurus.fab
+  (:require
+   ["package:flutter/material.dart" :as m]
+   [minataurus.utils :as utils]
+   [cljd.flutter.alpha :as f]))
+
+(def ^{:const true, :private true} pi 3.1415926535897932)
+
+;; TODO: get rid of this crutch to store listeners
+(def ^:private listeners (atom {}))
+
+(defn- toggle [opened? 
+               ^m/State state
+               ^m/AnimationController controller]
+  (.setState 
+    state
+    #(do (let [op? @opened?]
+           (if op?
+             (.forward controller)
+             (.reverse controller))
+           (swap! opened? not)))))
+
+(defn- widgets->expanding-action-buttons 
+  [^#/(List m/Widget) children 
+   ^#/(m/Animation double) expand-animation
+   distance]
+  (let [step (/ 90.0 (- (count children) 1))]
+    (loop [angle-in-degrees 0.0
+           children children
+           result []]
+      (if children
+        result
+        (recur (+ angle-in-degrees step)
+               (next children)
+               (conj result 
+                     (ExpandingActionButton.
+                       distance
+                       angle-in-degrees
+                       expand-animation
+                       (first children))))))))
+
+(defn- build-fab [^m/BuildContext ctx opened?]
+  (let [theme (m.Theme/of ctx)
+        transform-val (if @opened? 0.7 1.0)]
+    (m/AnimatedContainer.
+      :transformAlignment m.Alignment/center
+      :transform (.diagonal3Values m/Matrix4 transform-val transform-val 1.0)
+      :duration (m/Duration. :milliseconds 250)
+      :curve (m/Interval 0.0 0.5 :curve m.Curves/easeOut)
+      :child (m/AnimatedRotation.
+               :turns (if @opened? -0.1 0.0)
+               :curve (m/Interval 0.25 1.0 :curve m.Curves/easeInOut)
+               :duration (m/Duration. :milliseconds 250)
+               :child (m/Icon. m.Icons/add :color (if @opened? 
+                                                    (.primaryColor theme)
+                                                    m.Colors/white))))))
+
+(deftype ExpandableFab 
+  [^#/(m/ValueNotifier bool) close-hint
+   ^double distance
+   ^#/(List m/Widget) children]
+
+  :extends m/StatefulWidget
+
+  (^ExpandableFabState createState [_]
+    (ExpandableFabState.
+        (atom nil) ; animation-controller
+        (atom nil) ; animation 
+        (atom false)
+        distance
+        close-hint
+        children)))
+
+(deftype ExpandableFabState 
+  [;^m/AnimationController? _controller
+   controller
+   ;;^#/(m/Animation double) expand-animation
+   animation
+   opened?
+   ^double distance
+   ^#/(m/ValueNotifier bool) close-hint
+   ^#/(List m/Widget) children]
+
+  :extends m/State ^:mixin m/SingleTickerProviderStateMixin 
+
+  (^void initState [this]
+    (let [_controller (m/AnimationController.
+                       :value 0.0
+                       :duration (m/Duration. :milliseconds 250)
+                       :vsync this)
+          _animation (m/CurvedAnimation.
+                       :parent _controller
+                       :curve (m.Curves/fastOutSlowIn)
+                       :reverseCurve (m.Curves/easeOutQuad))]
+      (reset! controller _controller)
+      (reset! animation _animation)
+      (.addListener close-hint
+                    (swap!
+                      listeners
+                      #(assoc
+                         %
+                         this
+                         (fn [] 
+                           (toggle opened? this _controller)))))))
+
+  (^void dispose [this]
+    (when-let [_controller @controller]
+      (.dispose _controller))
+    (.removeListener close-hint
+                     (get @listeners this)))
+
+  (^m/Widget build [_ ctx]
+    (m.SizedBox/expand 
+      :child (m/Stack.
+               :alignment m.Alignment/bottomRight
+               :clipBehavior m.Clip/none
+               :children [(build-fab ctx opened?)] 
+               #_(conj (widgets->expanding-action-buttons 
+                                   children
+                                   @animation
+                                   distance)
+                                 (build-fab ctx opened?))))))
+
+(deftype ExpandingActionButton 
+   [^double max-distance
+    ^double direction-degrees
+    ^#/(m/Animation double) progress
+    ^m/Widget child] 
+
+  :extends m/StatelessWidget
+
+  (^m/Widget build [_ ctx]
+    (m/AnimatedBuilder.
+      :animation progress
+      :builder (fn [ctx, child]
+                 (let [offset (.fromDirection 
+                                m/Offset
+                                (* direction-degrees (/ pi 180.0))
+                                (* (.value progress) max-distance))]
+                   (m/Positioned
+                     :right (+ 4.0 (.dx offset))
+                     :bottom (+ 4.0 (.dy offset))
+                     :child (.rotate 
+                              m/Transform
+                              :angle (* (/ pi 2.0) (- 1.0 (.value progress)))
+                              :child child))))
+      :child (m/FadeTransition. 
+               :opacity progress
+               :child child))))
