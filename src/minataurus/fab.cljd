@@ -56,10 +56,10 @@
         :transformAlignment m.Alignment/center
         :transform (.diagonal3Values m/Matrix4 transform-val transform-val 1.0)
         :duration (m/Duration. :milliseconds 250)
-        :curve (m/Interval. 0.0 0.5 :curve m.Curves/easeOut))
+        :curve (m/Interval 0.0 0.5 :curve m.Curves/easeOut))
       (m/AnimatedRotation
         :turns (if opened? -0.1 0.0)
-        :curve (m/Interval. 0.25 1.0 :curve m.Curves/easeInOut)
+        :curve (m/Interval 0.25 1.0 :curve m.Curves/easeInOut)
         :duration (m/Duration. :milliseconds 250))
       (m/FloatingActionButton
         :onPressed (fn [] (set! (.-value close-hint) (not (.value close-hint))) nil)
@@ -126,7 +126,7 @@
   :extends m/StatefulWidget
 
   (^ExpandableFabState createState [_]
-    (ExpandableFabState
+    (ExpandableFabState. ;; CAN'T REMOVE THIS DOT
         (atom nil)   ; animation-controller
         (atom nil)   ; animation 
         (atom false) ; opened?

@@ -15,10 +15,10 @@
                        :elevation 4
                        :padding (m.EdgeInsets/symmetric :horizontal 16))
         text-style (m/TextStyle :color m.Colors/white)]
-    (m/Scaffold.
+    (m/Scaffold
       :backgroundColor m.Colors/black
       :floatingActionButton 
-      (fab/ExpandableFab.
+      (fab/ExpandableFab. ;; ERROR IF REMOVE THIS DOT!
         close-hint
         80.0                  ; distance
         [(.icon m/TextButton  ; children
@@ -51,13 +51,13 @@
                                "Mixins, Animations.\n\n"
                                
                                "Home this will help someone.")
-                             :style (m/TextStyle.
+                             :style (m/TextStyle
                                       :color m.Colors/white
                                       :fontSize 26.0))])))))
 
 (defn main []
   (m/runApp
-    (m/MaterialApp.
+    (m/MaterialApp
       :title "Welcome to Flutter"
       :theme (m/ThemeData :primarySwatch m.Colors/pink)
       :initialRoute "/" 
