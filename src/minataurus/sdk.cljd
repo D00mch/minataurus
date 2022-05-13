@@ -1,0 +1,12 @@
+(ns minataurus.sdk
+(:require
+   [clojure.string :refer [join capitalize]]
+   [minataurus.utils :as utils]))
+
+
+(def ^:private logger (utils/build-logger "sdk"))
+
+(defn- log [& args] (.d  logger(join " " (list* "main: " args))))
+
+(defn init []
+  (log "init"))

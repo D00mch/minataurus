@@ -15,6 +15,14 @@ dependencies:
   cupertino_icons: ^1.0.2
   feather_icons: ^1.2.0
 
+  # crypto
+  flutter_sodium: ^0.2.0
+  bip32_ed25519: ^0.2.1
+
+
+  # network
+  http: ^0.13.4
+
   # utility
   logger: ^1.1.0
   flutter_windowmanager: ^0.2.0
