@@ -28,7 +28,7 @@
       :child (m/FadeTransition :opacity progress :child child))))
 
 (defn- widgets->expanding-action-buttons 
-  [^#/(List m/Widget) children 
+  [children 
    ^#/(m/Animation double) expand-animation
    distance]
   (let [step (/ 90.0 (- (count children) 1))]
@@ -46,10 +46,9 @@
                        (first children))))
         result))))
 
-(defn- build-fab [^m/BuildContext ctx 
-                  ^#/(m/ValueNotifier bool) close-hint]
+(defn- build-fab [^m/BuildContext ctx close-hint]
   (let [theme (m.Theme/of ctx)
-        opened? (.value close-hint)
+        opened? @close-hint
         transform-val (if opened? 0.7 1.0)]
     (f/nest
       (m/AnimatedContainer
@@ -62,75 +61,33 @@
         :curve (m/Interval 0.25 1.0 :curve m.Curves/easeInOut)
         :duration (m/Duration. :milliseconds 250))
       (m/FloatingActionButton
-        :onPressed (fn [] (set! (.-value close-hint) (not (.value close-hint))) nil)
+        :onPressed (fn [] (swap! close-hint not) nil)
         :backgroundColor (if opened? m.Colors/white m.Colors/white))
       (m/Icon m.Icons/add :color (if opened? (.primaryColor theme) m.Colors/red)))))
 
-(defn- toggle [opened? 
-               ^m/State state
-               ^m/AnimationController controller]
-  (.setState state #(do 
-                      (swap! opened? not)
-                      (if @opened?
-                        (.forward controller)
-                        (.reverse controller))
-                      nil)))
-
-(deftype ExpandableFabState 
-  [controller
-   animation
-   opened?
-   listener
-   ^double distance
-   ^#/(m/ValueNotifier bool) close-hint
-   ^#/(List m/Widget) children]
-
-  :extends m/State ^:mixin m/SingleTickerProviderStateMixin 
-
-  (^void initState [this]
-    (let [_controller (m/AnimationController
-                       :value 0.0
-                       :duration (m/Duration. :milliseconds 250)
-                       :vsync this)
-          _animation (m/CurvedAnimation
-                       :parent _controller
-                       :curve (m.Curves/fastOutSlowIn)
-                       :reverseCurve (m.Curves/easeOutQuad))
-          _listener (fn [] (toggle opened? this _controller))]
-      (reset! controller _controller)
-      (reset! animation _animation)
-      (reset! listener _listener)
-      (.addListener close-hint _listener)))
-
-  (^void dispose [_]
-    (when-let [^m/AnimationController? _controller @controller]
-      (.dispose _controller))
-    (.removeListener close-hint @listener))
-
-  (^m/Widget build [_ ctx]
-    (m.SizedBox/expand 
-      :child (m/Stack
-               :alignment m.Alignment/bottomRight
-               :clipBehavior m.Clip/none
-               :children (list* (build-fab ctx close-hint)
-                                (widgets->expanding-action-buttons 
-                                  children
-                                  @animation
-                                  distance))))))
-
-(deftype ExpandableFab 
-  [^#/(m/ValueNotifier bool) close-hint
-   ^double distance
-   ^#/(List m/Widget) children]
-
-  :extends m/StatefulWidget
-
-  (^ExpandableFabState createState [_]
-    (ExpandableFabState. ;; CAN'T REMOVE THIS DOT
-        (atom nil)   ; animation-controller
-        (atom nil)   ; animation 
-        (atom false) ; opened?
-        (atom nil)   ; listener
-        distance
-        close-hint
-        children)))
+(defn fab [distance children]
+  (f/widget 
+    :ticker tick
+    :context ctx
+    :inherit [:close-hint]
+    :with [controller (m/AnimationController
+                        :value 0.0
+                        :duration (m/Duration. :milliseconds 250)
+                        :vsync tick)
+           :dispose comment]
+    (let [animation (m/CurvedAnimation
+                      :parent controller
+                      :curve (m.Curves/fastOutSlowIn)
+                      :reverseCurve (m.Curves/easeOutQuad))]
+      (if @close-hint
+        (.forward controller)
+        (.reverse controller))
+      (m.SizedBox/expand 
+        :child (m/Stack
+                 :alignment m.Alignment/bottomRight
+                 :clipBehavior m.Clip/none
+                 :children (list* (build-fab ctx close-hint)
+                                  (widgets->expanding-action-buttons 
+                                    children
+                                    animation
+                                    distance)))))))
